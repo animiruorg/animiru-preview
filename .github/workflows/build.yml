@@ -92,22 +92,18 @@ jobs:
           java-version: 25
           distribution: temurin
 
-      # AM (SYNC_DRIVE) -->
-      - name: Write client_secrets.json
-        uses: DamianReeves/write-file-action@v1.2
-        with:
-          path: app/src/main/assets/client_secrets.json
-          contents: ${{ secrets.CLIENT_SECRETS_TEXT }}
-          write-mode: overwrite
-      # <-- AM (SYNC_DRIVE)
-
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
-      - name: Build APK
-        run: ./gradlew assemblePreview -Pinclude-cast -Penable-updater
+      - name: Decode signing keystore
+        run: echo "$SIGNING_KEY" | base64 -d > "${{ runner.temp }}/quickie.keystore"
         env:
-          storeFileBase64: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+
+      - name: Build APK
+        run: ./gradlew assemblePreview -Pdist=github
+        env:
+          storeFile: ${{ runner.temp }}/quickie.keystore
           storePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias: ${{ secrets.ALIAS }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
